@@ -63,7 +63,6 @@ class DBProvider {
   }
 
   Future<int> updateToDoStatus(ToDo todo) async {
-    print('Updating in DB');
     final db = await database;
     return await db.rawUpdate(
       '''

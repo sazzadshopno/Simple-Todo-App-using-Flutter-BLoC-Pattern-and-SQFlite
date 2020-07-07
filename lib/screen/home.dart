@@ -3,6 +3,7 @@ import 'package:demo_sqlite/model/todo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -11,6 +12,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   DatabaseBloc databaseBloc;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String title = '', description = '';
   @override
   void initState() {
     super.initState();
@@ -50,6 +53,7 @@ class _HomeState extends State<Home> {
               color: Colors.red,
               onPressed: () {
                 deleteATodo(todo);
+                FlutterToast.showToast(msg: 'Todo is deleted!');
                 Navigator.pop(context);
               },
             ),
@@ -67,35 +71,52 @@ class _HomeState extends State<Home> {
         double customHeight = MediaQuery.of(context).size.height * .3;
         double customWidth = MediaQuery.of(context).size.width * .5;
         int maxTitleLength = 128, maxDescriptionLength = 256;
-        TextEditingController title = TextEditingController(),
-            description = TextEditingController();
+
         return AlertDialog(
           title: Text('Add a new todo'),
           content: Container(
             height: customHeight,
             width: customWidth,
-            child: Column(
-              children: [
-                TextFormField(
-                  autofocus: true,
-                  keyboardType: TextInputType.text,
-                  maxLength: maxTitleLength,
-                  controller: title,
-                  decoration: InputDecoration(
-                    hintText: 'Title',
-                    labelText: 'Title',
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    autofocus: true,
+                    keyboardType: TextInputType.text,
+                    maxLength: maxTitleLength,
+                    decoration: InputDecoration(
+                      hintText: 'Title',
+                      labelText: 'Title',
+                    ),
+                    validator: (String value) {
+                      if (value.trim() == '') {
+                        return 'Title should not be empty!';
+                      }
+                      return null;
+                    },
+                    onSaved: (String value) {
+                      print(value);
+                      title = value;
+                    },
                   ),
-                ),
-                TextFormField(
-                  keyboardType: TextInputType.text,
-                  maxLength: maxDescriptionLength,
-                  controller: description,
-                  decoration: InputDecoration(
-                    hintText: 'Description',
-                    labelText: 'Description',
+                  TextFormField(
+                    keyboardType: TextInputType.text,
+                    maxLength: maxDescriptionLength,
+                    decoration: InputDecoration(
+                      hintText: 'Description',
+                      labelText: 'Description',
+                    ),
+                    validator: (String value) {
+                      return null;
+                    },
+                    onSaved: (String value) {
+                      print(value);
+                      description = value;
+                    },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -108,8 +129,13 @@ class _HomeState extends State<Home> {
             FlatButton(
               child: Text('Add'),
               onPressed: () {
-                createATodo(title.text, description.text);
+                if (!_formKey.currentState.validate()) {
+                  return;
+                }
+                _formKey.currentState.save();
+                createATodo(title, description);
                 Navigator.pop(context);
+                FlutterToast.showToast(msg: 'Todo is added successfully!');
               },
             ),
           ],
@@ -119,8 +145,10 @@ class _HomeState extends State<Home> {
   }
 
   void updateToDoStatus(ToDo todo) {
-    print('Updating');
     databaseBloc.onUpdate(todo);
+
+    FlutterToast.showToast(
+        msg: todo.status == 0 ? 'Marked as Completed!' : 'Undone todo!');
   }
 
   @override
